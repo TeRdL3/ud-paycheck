@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="UD Paycheck" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UD Paycheck Calculator — Clean Rebuild</title>
+  <style>
+    :root{--bg:#0f172a;--panel:#0b1220;--text:#e5e7eb;--muted:#9ca3af;--line:rgba(255,255,255,.1);--accent:#3b82f6;--ok:#16a34a;--danger:#ef4444;--radius:14px}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(135deg,#0b1022,#0f172a 45%,#0b1022);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:1120px;margin-inline:auto;padding:20px}
+    h1{margin:0 0 10px;font-size:1.4rem}
+    .grid{display:grid;gap:14px}
+    @media (min-width:1000px){.grid{grid-template-columns:1.15fr .85fr}}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+    fieldset{border:none;padding:0;margin:0}
+    legend{font-weight:700;color:#cbd5e1;margin-bottom:8px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:560px){.row{grid-template-columns:1fr}}
+    label{font-size:.9rem;color:var(--muted);display:block;margin-bottom:6px}
+    input,select,textarea{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#091022;color:var(--text);outline:none}
+    input:focus,select:focus,textarea:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.2)}
+    .btns{display:flex;gap:8px;flex-wrap:wrap}
+    button{border:1px solid var(--line);background:#0f172a;color:var(--text);padding:12px 14px;border-radius:10px;cursor:pointer}
+    button.primary{background:linear-gradient(180deg,#2563eb,#1e40af)}
+    .line{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+    .big{font-size:1.3rem;font-weight:800}
+    .muted{color:var(--muted)}
+    .pill{display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;font-size:.75rem;color:#cfe1ff}
+    .grid14{display:grid;grid-template-columns:repeat(7, minmax(150px,1fr));gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+    .day{border:1px solid var(--line);border-radius:12px;padding:8px;scroll-snap-align:start}
+    .day h4{margin:0 0 6px;font-size:.8rem;color:#cbd5e1}
+    .x{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;line-height:1.25;margin:6px 0}
+    details>summary{cursor:pointer;color:#cbd5e1}
+    .foot{color:var(--muted);font-size:.85rem;margin-top:8px}
+    code{background:#0f172a;border:1px solid var(--line);padding:2px 6px;border-radius:6px}
+    .x input[type="checkbox"]{width:18px;height:18px;flex:0 0 auto;margin-top:2px}
+    .hoursRow{display:none;justify-content:space-between;align-items:center;font-size:.9rem;margin:6px 0}
+    .otSelect{min-width:84px;max-width:96px}
+    @media (max-width:480px){
+      .grid14{grid-template-columns:repeat(7, minmax(160px,1fr));}
+      .card{border-radius:16px}
+      .line{padding:10px 0}
+    }
+    .sticky-net{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(90deg,#0b1b3a,#122b54);border-top:1px solid var(--line);padding:12px 16px;display:none;align-items:center;justify-content:space-between;box-shadow:0 -6px 18px rgba(0,0,0,.35)}
+    @media (max-width:640px){
+      .grid{display:flex;flex-direction:column}
+      #summaryCard{order:2;position:static}
+      .sticky-net{display:flex}
+      body{padding-bottom:70px}
+      button,select,input{min-height:46px}
+      .grid14{grid-template-columns:repeat(7, minmax(170px,1fr))}
+    }
+    .compact{max-width:320px;margin-inline:auto;display:block}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>UD Paycheck Calculator — Clean Rebuild <span class="pill">biweekly</span></h1>
+    <div class="btns" style="margin-bottom:8px">
+      <button id="btnCalc" class="primary">Calculate</button>
+      <button id="btnReset">Reset</button>
+      <button id="btnSelfTest">Run Self-Test</button>
+      <span style="flex:1"></span>
+      <button id="btnDownload" title="Save a private copy">Save Copy (.html)</button>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <fieldset>
+          <legend>Base, Pay Scale & Deductions</legend>
+          <div class="row">
+            <div>
+              <label>Step (UD Officer — 2025 DC)</label>
+              <select id="step">
+                <option value="0">Step 1</option>
+                <option value="1">Step 2</option>
+                <option value="2">Step 3</option>
+                <option value="3">Step 4</option>
+                <option value="4">Step 5</option>
+                <option value="5">Step 6</option>
+                <option value="6">Step 7</option>
+                <option value="7">Step 8</option>
+                <option value="8">Step 9</option>
+                <option value="9">Step 10</option>
+                <option value="10">Step 11</option>
+                <option value="11">Step 12</option>
+                <option value="12">Step 13</option>
+              </select>
+            </div>
+            <div>
+              <label>Hourly (auto from Step — editable)</label>
+              <input id="hourly" type="number" step="0.01" inputmode="decimal" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>State</label>
+              <select id="state">
+                <option value="DC">Washington, DC</option>
+                <option value="VA">Virginia</option>
+                <option value="WV">West Virginia</option>
+                <option value="MD">Maryland</option>
+              </select>
+            </div>
+            <div>
+              <label>TSP % (pre-tax, on basic)</label>
+              <select id="tspPct">
+                <option value="0">0%</option>
+                <option value="5">5%</option>
+                <option value="10">10%</option>
+                <option value="15">15%</option>
+                <option value="20">20%</option>
+                <option value="25">25%</option>
+                <option value="30">30%</option>
+                <option value="40">40%</option>
+                <option value="50">50%</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Extra TSP ($ pre-tax)</label>
+              <input id="tspDollar" type="number" step="0.01" inputmode="decimal" value="0" />
+            </div>
+            <div>
+              <label>Other pre-tax ($)<br><small style='color:#9ca3af'>(e.g. Health Insurance, Dental/Vision, FSA/HSA)</small></label>
+              <input id="preTaxDollar" type="number" step="0.01" inputmode="decimal" value="0" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Federal %</label>
+              <input id="fedPct" type="number" step="0.01" inputmode="decimal" />
+            </div>
+            <div>
+              <label>State %</label>
+              <input id="statePct" type="number" step="0.01" inputmode="decimal" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>FICA %</label>
+              <input id="ficaPct" type="number" step="0.01" inputmode="decimal" />
+            </div>
+            <div>
+              <label>After-tax ($)<br><small style='color:#9ca3af'>(e.g. Union Dues, Garnishment, Child Support)</small></label>
+              <input id="afterTaxDollar" type="number" step="0.01" inputmode="decimal" value="0" />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset style="margin-top:12px">
+          <legend>Shift & Schedule</legend>
+          <div class="row">
+            <div>
+              <label>Section</label>
+              <select id="section" class="compact">
+                <option value="A">A (Midnights)</option>
+                <option value="B">B (Days)</option>
+                <option value="C">C (Afternoons)</option>
+              </select>
+            </div>
+            <div>
+              <label>Early/Over</label>
+              <select id="variant" class="compact">
+                <option value="std">Standard</option>
+                <option value="earlys">Early</option>
+                <option value="overs">Over</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>Extra OT hours (manual)</label>
+              <input id="otExtra" type="number" step="0.01" inputmode="decimal" value="0" />
+            </div>
+          </div>
+
+          <div class="card" style="background:#071022;border:1px dashed var(--line);margin-top:8px">
+            <div style="margin-bottom:6px;color:#cbd5e1">Biweekly day grid</div>
+            <div id="dayGrid" class="grid14"></div>
+            <div class="btns" style="margin-top:8px"><button id="btnClear" type="button">Clear all</button></div>
+          </div>
+
+        </fieldset>
+      </div>
+
+      <div id="summaryCard" class="card">
+        <div class="line"><span class="big">Estimated Gross</span><span id="outGross" class="big">$0.00</span></div>
+        <div class="line"><span>Federal Tax</span><span id="outFed">$0.00</span></div>
+        <div class="line"><span>State Tax</span><span id="outState">$0.00</span></div>
+        <div class="line"><span>TSP (percent + $)</span><span id="outTSP">$0.00</span></div>
+        <div class="line" style="background:#16213e;border-radius:10px;padding:12px;">
+          <span class="big" style="color:#16a34a;">Estimated Take-Home</span>
+          <span id="outNet" class="big">$0.00</span>
+        </div>
+
+        <div id="_hiddenSummary" style="display:none">
+          <div class="line"><span>Regular base</span><span id="outReg">$0.00</span></div>
+          <div class="line"><span>Night differential</span><span id="outNight">$0.00</span></div>
+          <div class="line"><span>Sunday premium</span><span id="outSun">$0.00</span></div>
+          <div class="line"><span>Holiday premium</span><span id="outHol">$0.00</span></div>
+          <div class="line"><span>FLSA premium</span><span id="outFLSA">$0.00</span></div>
+          <div class="line"><span>Overtime</span><span id="outOT">$0.00</span></div>
+          <div class="line"><span>GROSS</span><span id="_grossDup" class="big">$0.00</span></div>
+          <div class="line"><span>Other pre-tax</span><span id="outPre">$0.00</span></div>
+          <div class="line"><span>Taxable wages</span><span id="outTaxable">$0.00</span></div>
+          <div class="line"><span>Federal</span><span id="_fedDup">$0.00</span></div>
+          <div class="line"><span>State</span><span id="_stateDup">$0.00</span></div>
+          <div class="line"><span>FICA</span><span id="outFICA">$0.00</span></div>
+          <div class="line"><span>Total taxes</span><span id="outTaxes">$0.00</span></div>
+          <details style="margin-top:10px"><summary>Diagnostics</summary>
+            <div class="line"><span>Hourly used</span><span id="dbgHourly">$0.00</span></div>
+            <div class="line"><span>Reg worked hours</span><span id="dbgRegH">0.00</span></div>
+            <div class="line"><span>Paid leave hours</span><span id="dbgLeaveH">0.00</span></div>
+            <div class="line"><span>Day-off OT hours</span><span id="dbgOT">0.00</span></div>
+            <div class="line"><span>Worked night hours</span><span id="dbgNight">0.00</span></div>
+            <div class="line"><span>Holiday worked hours</span><span id="dbgHolH">0.00</span></div>
+            <div class="line"><span>FLSA eligible hours</span><span id="dbgFLSAH">0.00</span></div>
+          </details>
+          <p class="foot">Holiday: double time for hours worked; OT on holiday pays on top of holiday premium. Sick/Annual: base only. Sunday premium and night diff apply only to hours actually worked. FLSA (rough): counts only base 8-hour days over 86 hours in the 14-day period; midnights/holiday/Sunday still count if the base shift was worked.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="stickyNet" class="sticky-net" aria-live="polite">
+    <span style="font-weight:700">Estimated Take-Home</span>
+    <span id="stickyNetVal" class="big">$0.00</span>
+  </div>
+
+  <script>
+    const UD_STEP_HOURLY = [36.00,38.16,40.32,42.48,44.64,46.80,48.97,51.13,53.29,55.45,57.61,59.77,61.93];
+    const DEFAULT_TAX = { DC:{fed:22,state:8.5,fica:7.65}, VA:{fed:22,state:5.75,fica:7.65}, WV:{fed:22,state:6.0,fica:7.65}, MD:{fed:22,state:7.0,fica:7.65} };
+    const SUNDAY_PCT = 0.25;
+
+    const SHIFTS = {
+      A:{ std:{start:"22:30",end:"06:30"}, earlys:{start:"18:30",end:"06:30"}, overs:{start:"22:30",end:"10:30"} },
+      B:{ std:{start:"06:30",end:"14:30"}, earlys:{start:"02:30",end:"14:30"}, overs:{start:"06:30",end:"18:30"} },
+      C:{ std:{start:"14:30",end:"22:30"}, earlys:{start:"10:30",end:"18:30"}, overs:{start:"14:30",end:"02:30"} }
+    };
+
+    const NIGHT_START = '18:00';
+    const NIGHT_END   = '06:00';
+
+    const $ = id => document.getElementById(id);
+    const money = n => n.toLocaleString(undefined,{style:'currency',currency:'USD'});
+    const num = v => { const n=parseFloat(v); return isNaN(n)?0:n; };
+    const clamp = (v,min=0,max=1e9)=>Math.min(Math.max(v,min),max);
+    const tmin = t => { const [h,m]=t.split(":").map(Number); return h*60+m; };
+    const span = (a,b)=>{ let s=tmin(a), e=tmin(b); if(e<=s) e+=1440; return (e-s)/60; };
+    const overlap = (a1,a2,b1,b2)=>{ let s1=tmin(a1),e1=tmin(a2); if(e1<=s1) e1+=1440; let s2=tmin(b1),e2=tmin(b2); if(e2<=s2) e2+=1440; let tot=0; for(const w of [0,1440]){ const S2=s2+w,E2=e2+w; const s=Math.max(s1,S2), e=Math.min(e1,E2); if(e>s) tot+=(e-s);} return tot/60; };
+    const overlapAbs = (a1,a2,b1,b2)=> Math.max(0, Math.min(a2,b2) - Math.max(a1,b1));
+
+    function setText(id, value){ const el = $(id); if(el){ el.textContent = value; } }
+
+    function buildSteps(){
+      const sel=$("step"); if(!sel) return;
+      sel.innerHTML=''; for(let i=1;i<=13;i++){ const o=document.createElement('option'); o.value=String(i-1); o.textContent=`Step ${i}`; sel.appendChild(o); }
+      sel.value='4'; $("hourly").value=UD_STEP_HOURLY[4].toFixed(2);
+    }
+
+    function buildGrid(){
+      const g=$("dayGrid"); if(!g) return; g.innerHTML='';
+      const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      for(let i=0;i<14;i++){
+        const d=document.createElement('div'); d.className='day';
+        d.innerHTML=`<h4>${i<7?'Wk1':'Wk2'} ${DOW[i%7]}</h4>
+      <label class='x'><input type='checkbox' id='d${i}_off'/> Off</label>
+      <label class='x'><input type='checkbox' id='d${i}_work'/> Worked Day Off</label>
+      <div class='x hoursRow' id='d${i}_hrs'><span>Hours (WDO):</span> <select id='d${i}_otSel' disabled class='otSelect'><option value='8'>8</option><option value='12'>12</option></select></div>
+      <label class='x'><input type='checkbox' id='d${i}_sick'/> Sick/Annual</label>
+      <label class='x'><input type='checkbox' id='d${i}_holiday'/> Holiday (worked)</label>`;
+        g.appendChild(d);
+      }
+    }
+
+    function wireGrid(){
+      for(let i=0;i<14;i++){
+        const off=$(`d${i}_off`), work=$(`d${i}_work`), hol=$(`d${i}_holiday`), sick=$(`d${i}_sick`), otSel=$(`d${i}_otSel`), hrsRow=$(`d${i}_hrs`);
+        if(!(off&&work&&hol&&sick&&otSel&&hrsRow)) continue;
+        const applyWDOState = ()=>{ const visible = work.checked === true; otSel.disabled = !visible; hrsRow.style.display = visible ? 'flex' : 'none'; };
+        off.addEventListener('change', ()=>{ if(!off.checked){ work.checked = false; } applyWDOState(); calc(); });
+        work.addEventListener('change', ()=>{ if(work.checked){ off.checked = true; } applyWDOState(); calc(); });
+        hol.addEventListener('change',  ()=>{ applyWDOState(); calc(); });
+        sick.addEventListener('change', ()=>{ if(sick.checked){ hol.checked=false; } applyWDOState(); calc(); });
+        otSel.addEventListener('change', calc);
+        applyWDOState();
+      }
+    }
+
+    function schedule(){
+      const sec=$("section").value, varnt=$("variant").value, sh=SHIFTS[sec][varnt];
+      const per=span(sh.start, sh.end), nS=NIGHT_START, nE=NIGHT_END;
+      let regWorkedDays=0, leaveH=0, otH=0, nightH=0, holWorkedH=0, workedH=0, sundayH=0;
+      for(let i=0;i<14;i++){
+        const offRaw=$(`d${i}_off`).checked, wdo=$(`d${i}_work`).checked, sick=$(`d${i}_sick`).checked, hol=$(`d${i}_holiday`).checked;
+        const otSel = parseInt($(`d${i}_otSel`).value)||8;
+        const off = offRaw || wdo;
+        const leave=(!off && sick);
+        const workReg=(!off && !leave);
+        const workOT=(off && wdo);
+        if(leave) leaveH += per;
+        if(workReg){
+          regWorkedDays++; workedH += per; nightH += overlap(sh.start, sh.end, nS, nE);
+          const AS = i*1440 + tmin(sh.start);
+          const AE = AS + per*60;
+          let sunMin = 0;
+          sunMin += overlapAbs(AS, AE, 0, 1440);
+          sunMin += overlapAbs(AS, AE, 7*1440, 8*1440);
+          sundayH += sunMin/60;
+          if(hol){ holWorkedH += per; }
+        }
+        if(workOT){
+          const add = otSel;
+          otH += add; workedH += add;
+          nightH += overlap(sh.start, sh.end, nS, nE) * (add/per);
+          if(i%7===0) sundayH += add;
+          if(hol) holWorkedH += per;
+        }
+      }
+      const regWorkedH = regWorkedDays*per; const regBasicH = regWorkedH + leaveH;
+      return { per, regWorkedH, regBasicH, leaveH, otH, nightH, holWorkedH, workedH, sundayH };
+    }
+
+    function calc(){
+      const step = clamp(parseInt($("step").value)||0,0,12);
+      let hourly = num($("hourly").value); if(!(hourly>0)){ hourly = UD_STEP_HOURLY[step]; $("hourly").value=hourly.toFixed(2); }
+      const taxes = DEFAULT_TAX[$("state").value]; if(!$("fedPct").value){ $("fedPct").value=taxes.fed; $("statePct").value=taxes.state; $("ficaPct").value=taxes.fica; }
+
+      const s = schedule();
+      const nightPct = 0.10; const sunPct = SUNDAY_PCT; const holPct = 1.0;
+      const otMult = 1.5; const otExtra = num($("otExtra").value)||0;
+
+      const base = hourly * s.regBasicH;
+      const nightPay = hourly * nightPct * Math.min(s.nightH, s.workedH);
+      const sunPay = hourly * sunPct * Math.min(s.sundayH, s.workedH);
+      const otPay = hourly * otMult * (s.otH + otExtra);
+      const holPay = hourly * holPct * s.holWorkedH;
+      const flsaThreshold = 86;
+      const flsaEligibleH = Math.max(0, s.regWorkedH - flsaThreshold);
+      const flsaPay = (0.5 * hourly) * flsaEligibleH;
+      const gross = base + nightPay + sunPay + otPay + holPay + flsaPay;
+
+      const tspPct = (num($("tspPct").value)||0)/100; const tspDollar = Math.max(0, num($("tspDollar").value)||0);
+      const tspAmt = (hourly * s.regBasicH) * tspPct + tspDollar;
+      const preOther = Math.max(0, num($("preTaxDollar").value)||0);
+      const taxable = Math.max(0, gross - tspAmt - preOther);
+      const fed = taxable * (num($("fedPct").value)||0)/100;
+      const st  = taxable * (num($("statePct").value)||0)/100;
+      const fica= gross   * (num($("ficaPct").value)||0)/100;
+      const totalTaxes = fed + st + fica;
+      const net = gross - tspAmt - preOther - totalTaxes - (num($("afterTaxDollar").value)||0);
+
+      setText('outReg', money(base));
+      setText('outNight', money(nightPay));
+      setText('outSun', money(sunPay));
+      setText('outHol', money(holPay));
+      setText('outFLSA', money(flsaPay));
+      setText('outOT', money(otPay));
+      setText('outGross', money(gross));
+      setText('outTSP', money(tspAmt));
+      setText('outPre', money(preOther));
+      setText('outTaxable', money(taxable));
+      setText('_fedDup', money(fed)); setText('outFed', money(fed));
+      setText('_stateDup', money(st)); setText('outState', money(st));
+      setText('outFICA', money(fica));
+      setText('outTaxes', money(totalTaxes));
+      setText('outNet', money(net));
+      setText('stickyNetVal', money(net));
+      setText('dbgHourly', money(hourly));
+      setText('dbgRegH', s.regWorkedH.toFixed(2));
+      setText('dbgLeaveH', s.leaveH.toFixed(2));
+      setText('dbgOT', s.otH.toFixed(2));
+      setText('dbgNight', s.nightH.toFixed(2));
+      setText('dbgHolH', s.holWorkedH.toFixed(2));
+      setText('dbgFLSAH', flsaEligibleH.toFixed(2));
+    }
+
+    function clearAll(){ for(let i=0;i<14;i++){ ["off","work","sick","holiday"].forEach(s=> $(`d${i}_`+s).checked=false); $(`d${i}_otSel`).disabled=true; const r=$(`d${i}_hrs`); if(r) r.style.display='none'; } calc(); }
+
+    function selfTest(){
+      let pass=0, fail=0, notes=[]; const eq=(a,b,e=0.01)=>Math.abs(a-b)<=e;
+      buildGrid(); clearAll(); $("section").value='B'; $("variant").value='std'; $("step").value='4'; $("hourly").value='';  $("otExtra").value='0'; calc();
+      const g0 = Number($("outGross").textContent.replace(/[^0-9.\-]/g,'')); const exp0 = 44.64*80; if(eq(g0,exp0)) pass++; else { fail++; notes.push(`T0 gross ${g0} != ${exp0}`); }
+      buildGrid(); clearAll(); $("section").value='A'; $("variant").value='std'; calc(); const nh = Number($("dbgNight").textContent.replace(/[^0-9.\-]/g,'')); const expNh = 75; if(eq(nh,expNh)) pass++; else { fail++; notes.push(`T1 night ${nh} != ${expNh}`); }
+      buildGrid(); clearAll(); $(`d6_off`).checked=true; $(`d6_work`).checked=true; $(`d6_otSel`).value='12'; calc(); const ot2 = Number($("outOT").textContent.replace(/[^0-9.\-]/g,'')); const exp2 = (44.64*1.5*12); if(eq(ot2,exp2)) pass++; else { fail++; notes.push(`T2 OT ${ot2} != ${exp2}`); }
+      buildGrid(); clearAll(); $("section").value='B'; $("variant").value='std'; $(`d0_off`).checked=false; $(`d0_holiday`).checked=true;  calc();
+      const g3 = Number($("outGross").textContent.replace(/[^0-9.\-]/g,'')); const exp3 = (44.64*8) + (44.64*0.25*8) + (44.64*1.0*8); if(eq(g3,exp3)) pass++; else { fail++; notes.push(`T3 gross ${g3} != ${exp3}`); }
+      buildGrid(); clearAll(); $("section").value='B'; $("variant").value='std'; $(`d1_off`).checked=false; $(`d1_sick`).checked=true; $(`d1_holiday`).checked=true;  calc();
+      const g4 = Number($("outGross").textContent.replace(/[^0-9.\-]/g,'')); const exp4 = 44.64*8; if(eq(g4,exp4)) pass++; else { fail++; notes.push(`T4 gross ${g4} != ${exp4}`); }
+      buildGrid(); clearAll(); $("section").value='B'; $("variant").value='std'; $("step").value='4'; $("hourly").value='';
+      $("tspPct").value='10'; $("tspDollar").value='0'; $("preTaxDollar").value='0'; $("fedPct").value='0'; $("statePct").value='0'; $("ficaPct").value='0'; calc();
+      const tsp5 = Number($("outTSP").textContent.replace(/[^0-9.\-]/g,'')); const expTsp5 = 44.64*80*0.10; if(eq(tsp5,expTsp5)) pass++; else { fail++; notes.push(`T5 TSP ${tsp5} != ${expTsp5}`); }
+      buildGrid(); clearAll(); $(`d6_off`).checked=true; $(`d6_work`).checked=true; $(`d6_otSel`).value='8'; $("step").value='4'; $("hourly").value=''; calc();
+      const ot6 = Number($("outOT").textContent.replace(/[^0-9.\-]/g,'')); const exp6 = 44.64*1.5*8; if(eq(ot6,exp6)) pass++; else { fail++; notes.push(`T6 OT ${ot6} != ${exp6}`); }
+      buildGrid(); clearAll(); $(`d6_off`).checked=false; $(`d6_work`).checked=true; $(`d6_otSel`).value='12'; calc();
+      const ot7 = Number($("dbgOT").textContent.replace(/[^0-9.\-]/g,'')); const exp7 = 12; if(eq(ot7,exp7)) pass++; else { fail++; notes.push(`T7 WDO implies Off failed: ot=${ot7} expected ${exp7}`); }
+      buildGrid(); clearAll(); $(`d6_off`).checked=true; $(`d6_work`).checked=true; $(`d6_otSel`).value='12'; calc();
+      const ot8 = Number($("dbgOT").textContent.replace(/[^0-9.\-]/g,'')); const exp8 = 12; if(eq(ot8,exp8)) pass++; else { fail++; notes.push(`T8 day-off 12h not applied: ${ot8} != ${exp8}`); }
+      buildGrid(); clearAll(); $(`d0_off`).checked=false; $(`d0_holiday`).checked=true; $(`d0_otSel`).value='12'; calc();
+      const hol9 = Number($("dbgHolH").textContent.replace(/[^0-9.\-]/g,'')); const ot9 = Number($("dbgOT").textContent.replace(/[^0-9.\-]/g,''));
+      const expHol9 = 8; const expOt9 = 0; if(eq(hol9,expHol9) && eq(ot9,expOt9)) pass++; else { fail++; notes.push(`T9 holiday hours should be full shift (8): hol=${hol9}/ot=${ot9}`); }
+      buildGrid(); clearAll(); $(`d0_off`).checked=true; $(`d0_work`).checked=true; $(`d0_otSel`).value='8'; $("section").value='B'; $("variant").value='std'; $("step").value='4'; $("hourly").value=''; calc();
+      const sun10 = Number($("outSun").textContent.replace(/[^0-9.\-]/g,''));
+      const ot10  = Number($("outOT").textContent.replace(/[^0-9.\-]/g,''));
+      const expSun10 = 44.64*0.25*8; const expOt10 = 44.64*1.5*8; if(eq(sun10,expSun10) && eq(ot10,expOt10)) pass++; else { fail++; notes.push(`T10 Sunday WDO failed: sun=${sun10}!=${expSun10} or ot=${ot10}!=${expOt10}`); }
+      buildGrid(); clearAll(); $(`d0_off`).checked=false; $(`d0_sick`).checked=true; $("section").value='B'; $("variant").value='std'; $("step").value='4'; $("hourly").value=''; calc();
+      const sun11 = Number($("outSun").textContent.replace(/[^0-9.\-]/g,''));
+      const base11 = Number($("outReg").textContent.replace(/[^0-9.\-]/g,''));
+      const expSun11 = 0; const expBase11 = 44.64*8; if(eq(sun11,expSun11) and eq(base11,expBase11)) pass++; else { fail++; notes.push(`T11 Sunday sick failed: sun=${sun11}!=${expSun11} or base=${base11}!=${expBase11}`); }
+      buildGrid(); clearAll(); $("section").value='A'; $("variant").value='std'; $("step").value='4'; $("hourly").value=''; calc();
+      const sun12 = Number($("outSun").textContent.replace(/[^0-9.\-]/g,''));
+      const expSun12 = 44.64 * 0.25 * 16;
+      if(eq(sun12,expSun12)) pass++; else { fail++; notes.push(`T12 midnight Sunday double-dip failed: sun=${sun12}!=${expSun12}`); }
+      buildGrid(); clearAll(); $("section").value='B'; $("variant").value='std'; $("step").value='4'; $("hourly").value=''; calc();
+      const flsa13 = Number($("outFLSA").textContent.replace(/[^0-9.\-]/g,'')); const expFlsa13 = 44.64*0.5*26;
+      if(Math.abs(flsa13-expFlsa13)<=0.02) pass++; else { fail++; notes.push(`T13 FLSA ${flsa13} != ${expFlsa13}`); }
+      const fedVis = Number($("outFed").textContent.replace(/[^0-9.\-]/g,''));
+      const fedDup = Number($("_fedDup").textContent.replace(/[^0-9.\-]/g,''));
+      const stVis  = Number($("outState").textContent.replace(/[^0-9.\-]/g,''));
+      const stDup  = Number($("_stateDup").textContent.replace(/[^0-9.\-]/g,''));
+      if(eq(fedVis,fedDup) && eq(stVis,stDup)) pass++; else { fail++; notes.push(`T14 tax visibility mismatch: fed ${fedVis} vs ${fedDup}, state ${stVis} vs ${stDup}`); }
+      buildGrid(); clearAll(); $("section").value='B'; $("variant").value='std'; $("step").value='4'; $("hourly").value=''; calc();
+      const flsa15 = Number($("outFLSA").textContent.replace(/[^0-9.\-]/g,''));
+      if(eq(flsa15,0)) pass++; else { fail++; notes.push(`T15 FLSA baseline not zero: ${flsa15}`); }
+      const netVis = Number($("outNet").textContent.replace(/[^0-9.\-]/g,''));
+      const netSticky = Number($("stickyNetVal").textContent.replace(/[^0-9.\-]/g,''));
+      if(eq(netVis, netSticky)) pass++; else { fail++; notes.push(`T16 sticky footer mismatch: ${netVis} vs ${netSticky}`); }
+      buildGrid(); clearAll();
+      $(`d0_off`).checked=true; $(`d0_work`).checked=true;
+      const wasDisabledAfterWDO = $(`d0_otSel`).disabled === false;
+      $(`d0_work`).checked=false; $(`d0_off`).checked=false; $(`d0_holiday`).checked=true;
+      const isDisabledOnHolidayOnly = $(`d0_otSel`).disabled === true;
+      if(wasDisabledAfterWDO && isDisabledOnHolidayOnly) pass++; else { fail++; notes.push(`T17 selector gating failed (WDO enables, holiday-only disables)`); }
+      buildGrid(); clearAll(); 
+      $(`d0_off`).checked=false; $(`d0_holiday`).checked=true; $("section").value='B'; $("variant").value='std'; $("step").value='4'; $("hourly").value=''; calc();
+      const hol18 = Number($("dbgHolH").textContent.replace(/[^0-9.\-]/g,''));
+      if(eq(hol18,8)) pass++; else { fail++; notes.push(`T18 holiday full shift not applied, got ${hol18}`); }
+      alert(`Self-Test: ${pass} passed, ${fail} failed${notes.length ? "\n\n" + notes.join("\n") : ""}`);
+    }
+
+    function init(){
+      buildSteps(); buildGrid(); wireGrid(); clearAll();
+      const setTax = ()=>{ const t=DEFAULT_TAX[$("state").value]; $("fedPct").value=t.fed; $("statePct").value=t.state; $("ficaPct").value=t.fica; };
+      setTax();
+      $("state").addEventListener('change', ()=>{ setTax(); calc(); });
+      $("step").addEventListener('change', ()=>{ const idx=clamp(parseInt($("step").value)||0,0,12); $("hourly").value=UD_STEP_HOURLY[idx].toFixed(2); calc(); });
+      ["hourly","section","variant","otExtra","tspPct","tspDollar","preTaxDollar","fedPct","statePct","ficaPct","afterTaxDollar"].forEach(id=>{ $(id).addEventListener('input', calc); $(id).addEventListener('change', calc); });
+      $("btnCalc").addEventListener('click', calc);
+      $("btnReset").addEventListener('click', ()=>{ buildSteps(); buildGrid(); wireGrid(); clearAll(); calc(); });
+      $("btnSelfTest").addEventListener('click', selfTest);
+      $("btnClear").addEventListener('click', clearAll);
+      calc();
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+
+    function downloadSelf(){
+      try{
+        const html = '<!doctype html>\n' + document.documentElement.outerHTML;
+        const blob = new Blob([html], {type:'text/html'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'UD_Paycheck_Calculator.html';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+      }catch(err){ console.error('Download failed', err); }
+    }
+    (function(){ const b = document.getElementById('btnDownload'); if(b) b.addEventListener('click', downloadSelf); })();
+  </script>
+</body>
+</html>
